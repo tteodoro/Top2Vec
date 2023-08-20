@@ -10,8 +10,6 @@ from gensim.parsing.preprocessing import strip_tags
 from gensim.models.phrases import Phrases
 import umap
 import hdbscan
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 from joblib import dump, load
 from sklearn.cluster import dbscan
 import tempfile
@@ -42,28 +40,34 @@ try:
 except ImportError:
     _HAVE_TORCH = False
 
-logger = logging.getLogger('top2vec')
+logger = logging.getLogger("top2vec")
 logger.setLevel(logging.WARNING)
 sh = logging.StreamHandler()
-sh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+sh.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
 logger.addHandler(sh)
 
-use_models = ["universal-sentence-encoder-multilingual",
-              "universal-sentence-encoder",
-              "universal-sentence-encoder-large",
-              "universal-sentence-encoder-multilingual-large"]
+use_models = [
+    "universal-sentence-encoder-multilingual",
+    "universal-sentence-encoder",
+    "universal-sentence-encoder-large",
+    "universal-sentence-encoder-multilingual-large",
+]
 
 use_model_urls = {
     "universal-sentence-encoder-multilingual": "https://tfhub.dev/google/universal-sentence-encoder-multilingual/3",
     "universal-sentence-encoder": "https://tfhub.dev/google/universal-sentence-encoder/4",
     "universal-sentence-encoder-large": "https://tfhub.dev/google/universal-sentence-encoder-large/5",
     "universal-sentence-encoder-multilingual-large": "https://tfhub.dev/google/universal-sentence-encoder"
-                                                     "-multilingual-large/3"
+    "-multilingual-large/3",
 }
 
-sbert_models = ["distiluse-base-multilingual-cased",
-                "all-MiniLM-L6-v2",
-                "paraphrase-multilingual-MiniLM-L12-v2"]
+sbert_models = [
+    "distiluse-base-multilingual-cased",
+    "all-MiniLM-L6-v2",
+    "paraphrase-multilingual-MiniLM-L12-v2",
+]
 
 acceptable_embedding_models = use_models + sbert_models
 
@@ -117,8 +121,12 @@ def get_chunks(tokens, chunk_length, max_num_chunks, chunk_overlap_ratio):
     if max_num_chunks is not None:
         num_chunks = min(num_chunks, max_num_chunks)
 
-    return [" ".join(tokens[i:i + chunk_length])
-            for i in list(range(0, num_tokens, int(chunk_length * (1 - chunk_overlap_ratio))))[0:num_chunks]]
+    return [
+        " ".join(tokens[i : i + chunk_length])
+        for i in list(
+            range(0, num_tokens, int(chunk_length * (1 - chunk_overlap_ratio)))
+        )[0:num_chunks]
+    ]
 
 
 def get_random_chunks(tokens, chunk_length, chunk_len_coverage_ratio, max_num_chunks):
@@ -156,7 +164,7 @@ def get_random_chunks(tokens, chunk_length, chunk_len_coverage_ratio, max_num_ch
         num_chunks = min(num_chunks, max_num_chunks)
 
     starts = np.random.choice(range(0, num_tokens), size=num_chunks)
-    return [" ".join(tokens[i:i + chunk_length]) for i in starts]
+    return [" ".join(tokens[i : i + chunk_length]) for i in starts]
 
 
 class Top2Vec:
@@ -320,7 +328,7 @@ class Top2Vec:
         a longer time to train. The deep-learn option will learn the best
         quality vectors but will take significant time to train. The valid
         string speed options are:
-        
+
             * fast-learn
             * learn
             * deep-learn
@@ -348,7 +356,7 @@ class Top2Vec:
     workers: int (Optional)
         The amount of worker threads to be used in training the model. Larger
         amount will lead to faster training.
-    
+
     tokenizer: callable (Optional, default None)
         Override the default tokenization method. If None then
         gensim.utils.simple_preprocess will be used.
@@ -366,39 +374,39 @@ class Top2Vec:
 
     hdbscan_args: dict (Optional, default None)
         Pass custom arguments to HDBSCAN.
-    
+
     verbose: bool (Optional, default True)
         Whether to print status data during training.
     """
 
-    def __init__(self,
-                 documents,
-                 min_count=50,
-                 topic_merge_delta=0.1,
-                 ngram_vocab=False,
-                 ngram_vocab_args=None,
-                 embedding_model='doc2vec',
-                 embedding_model_path=None,
-                 embedding_batch_size=32,
-                 split_documents=False,
-                 document_chunker='sequential',
-                 chunk_length=100,
-                 max_num_chunks=None,
-                 chunk_overlap_ratio=0.5,
-                 chunk_len_coverage_ratio=1.0,
-                 sentencizer=None,
-                 speed='learn',
-                 use_corpus_file=False,
-                 document_ids=None,
-                 keep_documents=True,
-                 workers=None,
-                 tokenizer=None,
-                 use_embedding_model_tokenizer=False,
-                 umap_args=None,
-                 hdbscan_args=None,
-                 verbose=True
-                 ):
-
+    def __init__(
+        self,
+        documents,
+        min_count=50,
+        topic_merge_delta=0.1,
+        ngram_vocab=False,
+        ngram_vocab_args=None,
+        embedding_model="doc2vec",
+        embedding_model_path=None,
+        embedding_batch_size=32,
+        split_documents=False,
+        document_chunker="sequential",
+        chunk_length=100,
+        max_num_chunks=None,
+        chunk_overlap_ratio=0.5,
+        chunk_len_coverage_ratio=1.0,
+        sentencizer=None,
+        speed="learn",
+        use_corpus_file=False,
+        document_ids=None,
+        keep_documents=True,
+        workers=None,
+        tokenizer=None,
+        use_embedding_model_tokenizer=False,
+        umap_args=None,
+        hdbscan_args=None,
+        verbose=True,
+    ):
         if verbose:
             logger.setLevel(logging.DEBUG)
             self.verbose = True
@@ -412,7 +420,9 @@ class Top2Vec:
         # validate documents
         if not (isinstance(documents, list) or isinstance(documents, np.ndarray)):
             raise ValueError("Documents need to be a list of strings")
-        if not all((isinstance(doc, str) or isinstance(doc, np.str_)) for doc in documents):
+        if not all(
+            (isinstance(doc, str) or isinstance(doc, np.str_)) for doc in documents
+        ):
             raise ValueError("Documents need to be a list of strings")
         if keep_documents:
             self.documents = np.array(documents, dtype="object")
@@ -421,7 +431,9 @@ class Top2Vec:
 
         # validate document ids
         if document_ids is not None:
-            if not (isinstance(document_ids, list) or isinstance(document_ids, np.ndarray)):
+            if not (
+                isinstance(document_ids, list) or isinstance(document_ids, np.ndarray)
+            ):
                 raise ValueError("Documents ids need to be a list of str or int")
 
             if len(documents) != len(document_ids):
@@ -429,20 +441,30 @@ class Top2Vec:
             elif len(document_ids) != len(set(document_ids)):
                 raise ValueError("Document ids need to be unique")
 
-            if all((isinstance(doc_id, str) or isinstance(doc_id, np.str_)) for doc_id in document_ids):
+            if all(
+                (isinstance(doc_id, str) or isinstance(doc_id, np.str_))
+                for doc_id in document_ids
+            ):
                 self.doc_id_type = np.str_
-            elif all((isinstance(doc_id, int) or isinstance(doc_id, np.int_)) for doc_id in document_ids):
+            elif all(
+                (isinstance(doc_id, int) or isinstance(doc_id, np.int_))
+                for doc_id in document_ids
+            ):
                 self.doc_id_type = np.int_
             else:
                 raise ValueError("Document ids need to be str or int")
 
             self.document_ids_provided = True
             self.document_ids = np.array(document_ids)
-            self.doc_id2index = dict(zip(document_ids, list(range(0, len(document_ids)))))
+            self.doc_id2index = dict(
+                zip(document_ids, list(range(0, len(document_ids))))
+            )
         else:
             self.document_ids_provided = False
             self.document_ids = np.array(range(0, len(documents)))
-            self.doc_id2index = dict(zip(self.document_ids, list(range(0, len(self.document_ids)))))
+            self.doc_id2index = dict(
+                zip(self.document_ids, list(range(0, len(self.document_ids))))
+            )
             self.doc_id_type = np.int_
 
         self.embedding_model_path = embedding_model_path
@@ -451,17 +473,21 @@ class Top2Vec:
         use_sentencizer = False
         custom_chunker = False
         if split_documents:
-            if document_chunker == 'sequential':
+            if document_chunker == "sequential":
                 document_chunker = get_chunks
-                document_chunker_args = {"chunk_length": chunk_length,
-                                         "max_num_chunks": max_num_chunks,
-                                         "chunk_overlap_ratio": chunk_overlap_ratio}
+                document_chunker_args = {
+                    "chunk_length": chunk_length,
+                    "max_num_chunks": max_num_chunks,
+                    "chunk_overlap_ratio": chunk_overlap_ratio,
+                }
 
-            elif document_chunker == 'random':
+            elif document_chunker == "random":
                 document_chunker = get_random_chunks
-                document_chunker_args = {"chunk_length": chunk_length,
-                                         "max_num_chunks": max_num_chunks,
-                                         "chunk_len_coverage_ratio": chunk_len_coverage_ratio}
+                document_chunker_args = {
+                    "chunk_length": chunk_length,
+                    "max_num_chunks": max_num_chunks,
+                    "chunk_len_coverage_ratio": chunk_len_coverage_ratio,
+                }
 
             elif callable(document_chunker):
                 custom_chunker = True
@@ -470,10 +496,11 @@ class Top2Vec:
             elif callable(sentencizer):
                 use_sentencizer = True
             else:
-                raise ValueError(f"{sentencizer} is invalid. Document sentencizer must be callable.")
+                raise ValueError(
+                    f"{sentencizer} is invalid. Document sentencizer must be callable."
+                )
 
-        if embedding_model == 'doc2vec':
-
+        if embedding_model == "doc2vec":
             # validate training inputs
             if speed == "fast-learn":
                 hs = 0
@@ -492,7 +519,9 @@ class Top2Vec:
                 negative = 5
                 epochs = 1
             else:
-                raise ValueError("speed parameter needs to be one of: fast-learn, learn or deep-learn")
+                raise ValueError(
+                    "speed parameter needs to be one of: fast-learn, learn or deep-learn"
+                )
 
             if workers is None:
                 pass
@@ -501,34 +530,39 @@ class Top2Vec:
             else:
                 raise ValueError("workers needs to be an int")
 
-            doc2vec_args = {"vector_size": 300,
-                            "min_count": min_count,
-                            "window": 15,
-                            "sample": 1e-5,
-                            "negative": negative,
-                            "hs": hs,
-                            "epochs": epochs,
-                            "dm": 0,
-                            "dbow_words": 1}
+            doc2vec_args = {
+                "vector_size": 300,
+                "min_count": min_count,
+                "window": 15,
+                "sample": 1e-5,
+                "negative": negative,
+                "hs": hs,
+                "epochs": epochs,
+                "dm": 0,
+                "dbow_words": 1,
+            }
 
             if workers is not None:
                 doc2vec_args["workers"] = workers
 
-            logger.info('Pre-processing documents for training')
+            logger.info("Pre-processing documents for training")
 
             if use_corpus_file:
-                processed = [' '.join(tokenizer(doc)) for doc in documents]
+                processed = [" ".join(tokenizer(doc)) for doc in documents]
                 lines = "\n".join(processed)
-                temp = tempfile.NamedTemporaryFile(mode='w+t')
+                temp = tempfile.NamedTemporaryFile(mode="w+t")
                 temp.write(lines)
                 doc2vec_args["corpus_file"] = temp.name
 
             else:
-                train_corpus = [TaggedDocument(tokenizer(doc), [i]) for i, doc in enumerate(documents)]
+                train_corpus = [
+                    TaggedDocument(tokenizer(doc), [i])
+                    for i, doc in enumerate(documents)
+                ]
                 doc2vec_args["documents"] = train_corpus
 
-            logger.info('Creating joint document/word embedding')
-            self.embedding_model = 'doc2vec'
+            logger.info("Creating joint document/word embedding")
+            self.embedding_model = "doc2vec"
             self.model = Doc2Vec(**doc2vec_args)
 
             self.word_vectors = self.model.wv.get_normed_vectors()
@@ -540,23 +574,29 @@ class Top2Vec:
                 tokenized_corpus = [tokenizer(doc) for doc in documents]
 
                 if ngram_vocab_args is None:
-                    ngram_vocab_args = {'sentences': tokenized_corpus,
-                                        'min_count': 5,
-                                        'threshold': 10.0,
-                                        'delimiter': ' '}
+                    ngram_vocab_args = {
+                        "sentences": tokenized_corpus,
+                        "min_count": 5,
+                        "threshold": 10.0,
+                        "delimiter": " ",
+                    }
                 else:
-                    ngram_vocab_args['sentences'] = tokenized_corpus
-                    ngram_vocab_args['delimiter'] = ' '
+                    ngram_vocab_args["sentences"] = tokenized_corpus
+                    ngram_vocab_args["delimiter"] = " "
 
                 phrase_model = Phrases(**ngram_vocab_args)
                 phrase_results = phrase_model.find_phrases(tokenized_corpus)
                 phrases = list(phrase_results.keys())
 
                 phrases_processed = [tokenizer(phrase) for phrase in phrases]
-                phrase_vectors = np.vstack([self.model.infer_vector(doc_words=phrase,
-                                                                    alpha=0.025,
-                                                                    min_alpha=0.01,
-                                                                    epochs=100) for phrase in phrases_processed])
+                phrase_vectors = np.vstack(
+                    [
+                        self.model.infer_vector(
+                            doc_words=phrase, alpha=0.025, min_alpha=0.01, epochs=100
+                        )
+                        for phrase in phrases_processed
+                    ]
+                )
                 phrase_vectors = self._l2_normalize(phrase_vectors)
 
                 self.word_vectors = np.vstack([self.word_vectors, phrase_vectors])
@@ -566,14 +606,15 @@ class Top2Vec:
             if use_corpus_file:
                 temp.close()
 
-        elif (embedding_model in acceptable_embedding_models) or callable(embedding_model):
-
+        elif (embedding_model in acceptable_embedding_models) or callable(
+            embedding_model
+        ):
             self.embed = None
             self.embedding_model = embedding_model
 
             self._check_import_status()
 
-            logger.info('Pre-processing documents for training')
+            logger.info("Pre-processing documents for training")
 
             # preprocess documents
             tokenized_corpus = [tokenizer(doc) for doc in documents]
@@ -589,19 +630,23 @@ class Top2Vec:
             vocab_inds = np.where(word_counts > min_count)[0]
 
             if len(vocab_inds) == 0:
-                raise ValueError(f"A min_count of {min_count} results in "
-                                 f"all words being ignored, choose a lower value.")
+                raise ValueError(
+                    f"A min_count of {min_count} results in "
+                    f"all words being ignored, choose a lower value."
+                )
             self.vocab = [words[ind] for ind in vocab_inds]
 
             if ngram_vocab:
                 if ngram_vocab_args is None:
-                    ngram_vocab_args = {'sentences': tokenized_corpus,
-                                        'min_count': 5,
-                                        'threshold': 10.0,
-                                        'delimiter': ' '}
+                    ngram_vocab_args = {
+                        "sentences": tokenized_corpus,
+                        "min_count": 5,
+                        "threshold": 10.0,
+                        "delimiter": " ",
+                    }
                 else:
-                    ngram_vocab_args['sentences'] = tokenized_corpus
-                    ngram_vocab_args['delimiter'] = ' '
+                    ngram_vocab_args["sentences"] = tokenized_corpus
+                    ngram_vocab_args["delimiter"] = " "
 
                 phrase_model = Phrases(**ngram_vocab_args)
                 phrase_results = phrase_model.find_phrases(tokenized_corpus)
@@ -611,7 +656,7 @@ class Top2Vec:
 
             self._check_model_status()
 
-            logger.info('Creating joint document/word embedding')
+            logger.info("Creating joint document/word embedding")
 
             # embed words
             self.word_indexes = dict(zip(self.vocab, range(len(self.vocab))))
@@ -640,30 +685,49 @@ class Top2Vec:
                         if custom_chunker:
                             doc_chunks = document_chunker(tokens)
                         else:
-                            doc_chunks = document_chunker(tokens, **document_chunker_args)
+                            doc_chunks = document_chunker(
+                                tokens, **document_chunker_args
+                            )
                         doc_chunk_ids = [chunk_id] * len(doc_chunks)
                         chunk_id += 1
                         chunked_docs.extend(doc_chunks)
                         chunked_doc_ids.extend(doc_chunk_ids)
 
                 chunked_doc_ids = np.array(chunked_doc_ids)
-                document_chunk_vectors = self._embed_documents(chunked_docs, embedding_batch_size)
+                document_chunk_vectors = self._embed_documents(
+                    chunked_docs, embedding_batch_size
+                )
                 self.document_vectors = self._l2_normalize(
-                    np.vstack([document_chunk_vectors[np.where(chunked_doc_ids == label)[0]]
-                              .mean(axis=0) for label in set(chunked_doc_ids)]))
+                    np.vstack(
+                        [
+                            document_chunk_vectors[
+                                np.where(chunked_doc_ids == label)[0]
+                            ].mean(axis=0)
+                            for label in set(chunked_doc_ids)
+                        ]
+                    )
+                )
 
             # original documents
             else:
                 if use_embedding_model_tokenizer:
-                    self.document_vectors = self._embed_documents(documents, embedding_batch_size)
+                    self.document_vectors = self._embed_documents(
+                        documents, embedding_batch_size
+                    )
                 else:
-                    train_corpus = [' '.join(tokens) for tokens in tokenized_corpus]
-                    self.document_vectors = self._embed_documents(train_corpus, embedding_batch_size)
+                    train_corpus = [" ".join(tokens) for tokens in tokenized_corpus]
+                    self.document_vectors = self._embed_documents(
+                        train_corpus, embedding_batch_size
+                    )
 
         else:
             raise ValueError(f"{embedding_model} is an invalid embedding model.")
 
-        self.compute_topics(umap_args=umap_args, hdbscan_args=hdbscan_args, topic_merge_delta=topic_merge_delta)
+        self.compute_topics(
+            umap_args=umap_args,
+            hdbscan_args=hdbscan_args,
+            topic_merge_delta=topic_merge_delta,
+        )
 
         # initialize document indexing variables
         self.document_index = None
@@ -696,7 +760,7 @@ class Top2Vec:
 
         # serialize document index so that it can be saved
         if self.documents_indexed:
-            temp = tempfile.NamedTemporaryFile(mode='w+b')
+            temp = tempfile.NamedTemporaryFile(mode="w+b")
             self.document_index.save_index(temp.name)
             self.serialized_document_index = temp.read()
             temp.close()
@@ -705,7 +769,7 @@ class Top2Vec:
 
         # serialize word index so that it can be saved
         if self.words_indexed:
-            temp = tempfile.NamedTemporaryFile(mode='w+b')
+            temp = tempfile.NamedTemporaryFile(mode="w+b")
             self.word_index.save_index(temp.name)
             self.serialized_word_index = temp.read()
             temp.close()
@@ -734,33 +798,42 @@ class Top2Vec:
         # load document index
         if top2vec_model.documents_indexed:
             if not _HAVE_HNSWLIB:
-                raise ImportError(f"Cannot load document index.\n\n"
-                                  "Try: pip install top2vec[indexing]\n\n"
-                                  "Alternatively try: pip install hnswlib")
+                raise ImportError(
+                    f"Cannot load document index.\n\n"
+                    "Try: pip install top2vec[indexing]\n\n"
+                    "Alternatively try: pip install hnswlib"
+                )
 
-            temp = tempfile.NamedTemporaryFile(mode='w+b')
+            temp = tempfile.NamedTemporaryFile(mode="w+b")
             temp.write(top2vec_model.serialized_document_index)
             document_vectors = top2vec_model.document_vectors
-            top2vec_model.document_index = hnswlib.Index(space='ip',
-                                                         dim=document_vectors.shape[1])
-            top2vec_model.document_index.load_index(temp.name, max_elements=document_vectors.shape[0])
+            top2vec_model.document_index = hnswlib.Index(
+                space="ip", dim=document_vectors.shape[1]
+            )
+            top2vec_model.document_index.load_index(
+                temp.name, max_elements=document_vectors.shape[0]
+            )
             temp.close()
             top2vec_model.serialized_document_index = None
 
         # load word index
         if top2vec_model.words_indexed:
-
             if not _HAVE_HNSWLIB:
-                raise ImportError(f"Cannot load word index.\n\n"
-                                  "Try: pip install top2vec[indexing]\n\n"
-                                  "Alternatively try: pip install hnswlib")
+                raise ImportError(
+                    f"Cannot load word index.\n\n"
+                    "Try: pip install top2vec[indexing]\n\n"
+                    "Alternatively try: pip install hnswlib"
+                )
 
-            temp = tempfile.NamedTemporaryFile(mode='w+b')
+            temp = tempfile.NamedTemporaryFile(mode="w+b")
             temp.write(top2vec_model.serialized_word_index)
             word_vectors = top2vec_model.word_vectors
-            top2vec_model.word_index = hnswlib.Index(space='ip',
-                                                     dim=word_vectors.shape[1])
-            top2vec_model.word_index.load_index(temp.name, max_elements=word_vectors.shape[0])
+            top2vec_model.word_index = hnswlib.Index(
+                space="ip", dim=word_vectors.shape[1]
+            )
+            top2vec_model.word_index.load_index(
+                temp.name, max_elements=word_vectors.shape[0]
+            )
             temp.close()
             top2vec_model.serialized_word_index = None
 
@@ -768,14 +841,12 @@ class Top2Vec:
 
     @staticmethod
     def _l2_normalize(vectors):
-
         if vectors.ndim == 2:
             return normalize(vectors)
         else:
             return normalize(vectors.reshape(1, -1))[0]
 
     def _embed_documents(self, train_corpus, batch_size):
-
         self._check_import_status()
         self._check_model_status()
 
@@ -783,22 +854,27 @@ class Top2Vec:
         document_vectors = []
 
         if (self.embedding_model in use_models) or self.embedding_model == "custom":
-
             current = 0
             batches = int(len(train_corpus) / batch_size)
             extra = len(train_corpus) % batch_size
 
             for ind in range(0, batches):
-                document_vectors.append(self.embed(train_corpus[current:current + batch_size]))
+                document_vectors.append(
+                    self.embed(train_corpus[current : current + batch_size])
+                )
                 current += batch_size
 
             if extra > 0:
-                document_vectors.append(self.embed(train_corpus[current:current + extra]))
+                document_vectors.append(
+                    self.embed(train_corpus[current : current + extra])
+                )
 
             document_vectors = self._l2_normalize(np.array(np.vstack(document_vectors)))
 
         else:
-            document_vectors = self._l2_normalize(self.embed(train_corpus, batch_size=batch_size))
+            document_vectors = self._l2_normalize(
+                self.embed(train_corpus, batch_size=batch_size)
+            )
 
         return document_vectors
 
@@ -813,19 +889,24 @@ class Top2Vec:
         if -1 in unique_labels:
             unique_labels.remove(-1)
         self.topic_vectors = self._l2_normalize(
-            np.vstack([self.document_vectors[np.where(cluster_labels == label)[0]]
-                      .mean(axis=0) for label in unique_labels]))
+            np.vstack(
+                [
+                    self.document_vectors[np.where(cluster_labels == label)[0]].mean(
+                        axis=0
+                    )
+                    for label in unique_labels
+                ]
+            )
+        )
 
     def _deduplicate_topics(self, topic_merge_delta):
-        core_samples, labels = dbscan(X=self.topic_vectors,
-                                      eps=topic_merge_delta,
-                                      min_samples=2,
-                                      metric="cosine")
+        core_samples, labels = dbscan(
+            X=self.topic_vectors, eps=topic_merge_delta, min_samples=2, metric="cosine"
+        )
 
         duplicate_clusters = set(labels)
 
         if len(duplicate_clusters) > 1 or -1 not in duplicate_clusters:
-
             # unique topics
             unique_topics = self.topic_vectors[np.where(labels == -1)[0]]
 
@@ -835,8 +916,15 @@ class Top2Vec:
             # merge duplicate topics
             for unique_label in duplicate_clusters:
                 unique_topics = np.vstack(
-                    [unique_topics, self._l2_normalize(self.topic_vectors[np.where(labels == unique_label)[0]]
-                                                       .mean(axis=0))])
+                    [
+                        unique_topics,
+                        self._l2_normalize(
+                            self.topic_vectors[
+                                np.where(labels == unique_label)[0]
+                            ].mean(axis=0)
+                        ),
+                    ]
+                )
 
             self.topic_vectors = unique_topics
 
@@ -849,12 +937,22 @@ class Top2Vec:
         return topic_sizes
 
     def _reorder_topics(self, hierarchy=False):
-
         if hierarchy:
-            self.topic_vectors_reduced = self.topic_vectors_reduced[self.topic_sizes_reduced.index]
-            self.topic_words_reduced = self.topic_words_reduced[self.topic_sizes_reduced.index]
-            self.topic_word_scores_reduced = self.topic_word_scores_reduced[self.topic_sizes_reduced.index]
-            old2new = dict(zip(self.topic_sizes_reduced.index, range(self.topic_sizes_reduced.index.shape[0])))
+            self.topic_vectors_reduced = self.topic_vectors_reduced[
+                self.topic_sizes_reduced.index
+            ]
+            self.topic_words_reduced = self.topic_words_reduced[
+                self.topic_sizes_reduced.index
+            ]
+            self.topic_word_scores_reduced = self.topic_word_scores_reduced[
+                self.topic_sizes_reduced.index
+            ]
+            old2new = dict(
+                zip(
+                    self.topic_sizes_reduced.index,
+                    range(self.topic_sizes_reduced.index.shape[0]),
+                )
+            )
             self.doc_top_reduced = np.array([old2new[i] for i in self.doc_top_reduced])
             self.hierarchy = [self.hierarchy[i] for i in self.topic_sizes_reduced.index]
             self.topic_sizes_reduced.reset_index(drop=True, inplace=True)
@@ -862,12 +960,16 @@ class Top2Vec:
             self.topic_vectors = self.topic_vectors[self.topic_sizes.index]
             self.topic_words = self.topic_words[self.topic_sizes.index]
             self.topic_word_scores = self.topic_word_scores[self.topic_sizes.index]
-            old2new = dict(zip(self.topic_sizes.index, range(self.topic_sizes.index.shape[0])))
+            old2new = dict(
+                zip(self.topic_sizes.index, range(self.topic_sizes.index.shape[0]))
+            )
             self.doc_top = np.array([old2new[i] for i in self.doc_top])
             self.topic_sizes.reset_index(drop=True, inplace=True)
 
     @staticmethod
-    def _calculate_documents_topic(topic_vectors, document_vectors, dist=True, num_topics=None):
+    def _calculate_documents_topic(
+        topic_vectors, document_vectors, dist=True, num_topics=None
+    ):
         batch_size = 10000
         doc_top = []
         if dist:
@@ -879,7 +981,9 @@ class Top2Vec:
             extra = document_vectors.shape[0] % batch_size
 
             for ind in range(0, batches):
-                res = np.inner(document_vectors[current:current + batch_size], topic_vectors)
+                res = np.inner(
+                    document_vectors[current : current + batch_size], topic_vectors
+                )
 
                 if num_topics is None:
                     doc_top.extend(np.argmax(res, axis=1))
@@ -893,7 +997,9 @@ class Top2Vec:
                 current += batch_size
 
             if extra > 0:
-                res = np.inner(document_vectors[current:current + extra], topic_vectors)
+                res = np.inner(
+                    document_vectors[current : current + extra], topic_vectors
+                )
 
                 if num_topics is None:
                     doc_top.extend(np.argmax(res, axis=1))
@@ -945,14 +1051,17 @@ class Top2Vec:
         return topic_words, topic_word_scores
 
     def _assign_documents_to_topic(self, document_vectors, hierarchy=False):
-
         if hierarchy:
-            doc_top_new, doc_dist_new = self._calculate_documents_topic(self.topic_vectors_reduced,
-                                                                        document_vectors,
-                                                                        dist=True)
+            doc_top_new, doc_dist_new = self._calculate_documents_topic(
+                self.topic_vectors_reduced, document_vectors, dist=True
+            )
 
-            self.doc_top_reduced = np.array(list(self.doc_top_reduced) + list(doc_top_new))
-            self.doc_dist_reduced = np.array(list(self.doc_dist_reduced) + list(doc_dist_new))
+            self.doc_top_reduced = np.array(
+                list(self.doc_top_reduced) + list(doc_top_new)
+            )
+            self.doc_dist_reduced = np.array(
+                list(self.doc_dist_reduced) + list(doc_dist_new)
+            )
 
             topic_sizes_new = pd.Series(doc_top_new).value_counts()
             for top in topic_sizes_new.index.tolist():
@@ -960,7 +1069,9 @@ class Top2Vec:
             self.topic_sizes_reduced.sort_values(ascending=False, inplace=True)
             self._reorder_topics(hierarchy)
         else:
-            doc_top_new, doc_dist_new = self._calculate_documents_topic(self.topic_vectors, document_vectors, dist=True)
+            doc_top_new, doc_dist_new = self._calculate_documents_topic(
+                self.topic_vectors, document_vectors, dist=True
+            )
             self.doc_top = np.array(list(self.doc_top) + list(doc_top_new))
             self.doc_dist = np.array(list(self.doc_dist) + list(doc_dist_new))
 
@@ -1000,17 +1111,15 @@ class Top2Vec:
             return [self.doc_id2index[doc_id] for doc_id in doc_ids]
 
     def _words2word_vectors(self, keywords):
-
         return self.word_vectors[[self.word_indexes[word] for word in keywords]]
 
     def _get_combined_vec(self, vecs, vecs_neg):
-
         combined_vector = np.zeros(self.document_vectors.shape[1], dtype=np.float64)
         for vec in vecs:
             combined_vector += vec
         for vec in vecs_neg:
             combined_vector -= vec
-        combined_vector /= (len(vecs) + len(vecs_neg))
+        combined_vector /= len(vecs) + len(vecs_neg)
         combined_vector = self._l2_normalize(combined_vector)
 
         return combined_vector
@@ -1026,31 +1135,41 @@ class Top2Vec:
     @staticmethod
     def _check_hnswlib_status():
         if not _HAVE_HNSWLIB:
-            raise ImportError(f"Indexing is not available.\n\n"
-                              "Try: pip install top2vec[indexing]\n\n"
-                              "Alternatively try: pip install hnswlib")
+            raise ImportError(
+                f"Indexing is not available.\n\n"
+                "Try: pip install top2vec[indexing]\n\n"
+                "Alternatively try: pip install hnswlib"
+            )
 
     def _check_document_index_status(self):
         if self.document_index is None:
-            raise ImportError("There is no document index.\n\n"
-                              "Call index_document_vectors method before setting use_index=True.")
+            raise ImportError(
+                "There is no document index.\n\n"
+                "Call index_document_vectors method before setting use_index=True."
+            )
 
     def _check_word_index_status(self):
         if self.word_index is None:
-            raise ImportError("There is no word index.\n\n"
-                              "Call index_word_vectors method before setting use_index=True.")
+            raise ImportError(
+                "There is no word index.\n\n"
+                "Call index_word_vectors method before setting use_index=True."
+            )
 
     def _check_import_status(self):
         if self.embedding_model in use_models:
             if not _HAVE_TENSORFLOW:
-                raise ImportError(f"{self.embedding_model} is not available.\n\n"
-                                  "Try: pip install top2vec[sentence_encoders]\n\n"
-                                  "Alternatively try: pip install tensorflow tensorflow_hub tensorflow_text")
+                raise ImportError(
+                    f"{self.embedding_model} is not available.\n\n"
+                    "Try: pip install top2vec[sentence_encoders]\n\n"
+                    "Alternatively try: pip install tensorflow tensorflow_hub tensorflow_text"
+                )
         elif self.embedding_model in sbert_models:
             if not _HAVE_TORCH:
-                raise ImportError(f"{self.embedding_model} is not available.\n\n"
-                                  "Try: pip install top2vec[sentence_transformers]\n\n"
-                                  "Alternatively try: pip install torch sentence_transformers")
+                raise ImportError(
+                    f"{self.embedding_model} is not available.\n\n"
+                    "Try: pip install top2vec[sentence_transformers]\n\n"
+                    "Alternatively try: pip install torch sentence_transformers"
+                )
 
     def _check_model_status(self):
         if self.embed is None:
@@ -1059,20 +1178,24 @@ class Top2Vec:
 
             if self.embedding_model in use_models:
                 if self.embedding_model_path is None:
-                    logger.info(f'Downloading {self.embedding_model} model')
+                    logger.info(f"Downloading {self.embedding_model} model")
                     module = use_model_urls[self.embedding_model]
 
                 else:
-                    logger.info(f'Loading {self.embedding_model} model at {self.embedding_model_path}')
+                    logger.info(
+                        f"Loading {self.embedding_model} model at {self.embedding_model_path}"
+                    )
                     module = self.embedding_model_path
                 self.embed = hub.load(module)
 
             elif self.embedding_model in sbert_models:
                 if self.embedding_model_path is None:
-                    logger.info(f'Downloading {self.embedding_model} model')
+                    logger.info(f"Downloading {self.embedding_model} model")
                     module = self.embedding_model
                 else:
-                    logger.info(f'Loading {self.embedding_model} model at {self.embedding_model_path}')
+                    logger.info(
+                        f"Loading {self.embedding_model} model at {self.embedding_model_path}"
+                    )
                     module = self.embedding_model_path
                 model = SentenceTransformer(module)
                 self.embed = model.encode
@@ -1082,8 +1205,10 @@ class Top2Vec:
                 self.embedding_model = "custom"
 
             elif self.embedding_model == "custom":
-                raise ValueError("Call set_embedding_model method and pass callable"
-                                 " embedding_model used during training.")
+                raise ValueError(
+                    "Call set_embedding_model method and pass callable"
+                    " embedding_model used during training."
+                )
 
         if self.verbose is False:
             logger.setLevel(logging.WARNING)
@@ -1100,24 +1225,32 @@ class Top2Vec:
     def _validate_hierarchical_reduction_num_topics(self, num_topics):
         current_num_topics = len(self.topic_vectors)
         if num_topics >= current_num_topics:
-            raise ValueError(f"Number of topics must be less than {current_num_topics}.")
+            raise ValueError(
+                f"Number of topics must be less than {current_num_topics}."
+            )
 
     def _validate_num_docs(self, num_docs):
         self._less_than_zero(num_docs, "num_docs")
         document_count = len(self.doc_top)
         if num_docs > document_count:
-            raise ValueError(f"num_docs cannot exceed the number of documents: {document_count}.")
+            raise ValueError(
+                f"num_docs cannot exceed the number of documents: {document_count}."
+            )
 
     def _validate_num_topics(self, num_topics, reduced):
         self._less_than_zero(num_topics, "num_topics")
         if reduced:
             topic_count = len(self.topic_vectors_reduced)
             if num_topics > topic_count:
-                raise ValueError(f"num_topics cannot exceed the number of reduced topics: {topic_count}.")
+                raise ValueError(
+                    f"num_topics cannot exceed the number of reduced topics: {topic_count}."
+                )
         else:
             topic_count = len(self.topic_vectors)
             if num_topics > topic_count:
-                raise ValueError(f"num_topics cannot exceed the number of topics: {topic_count}.")
+                raise ValueError(
+                    f"num_topics cannot exceed the number of topics: {topic_count}."
+                )
 
     def _validate_topic_num(self, topic_num, reduced):
         self._less_than_zero(topic_num, "topic_num")
@@ -1125,25 +1258,32 @@ class Top2Vec:
         if reduced:
             topic_count = len(self.topic_vectors_reduced) - 1
             if topic_num > topic_count:
-                raise ValueError(f"Invalid topic number: valid reduced topics numbers are 0 to {topic_count}.")
+                raise ValueError(
+                    f"Invalid topic number: valid reduced topics numbers are 0 to {topic_count}."
+                )
         else:
             topic_count = len(self.topic_vectors) - 1
             if topic_num > topic_count:
-                raise ValueError(f"Invalid topic number: valid original topics numbers are 0 to {topic_count}.")
+                raise ValueError(
+                    f"Invalid topic number: valid original topics numbers are 0 to {topic_count}."
+                )
 
     def _validate_topic_search(self, topic_num, num_docs, reduced):
         self._less_than_zero(num_docs, "num_docs")
         if reduced:
             if num_docs > self.topic_sizes_reduced[topic_num]:
-                raise ValueError(f"Invalid number of documents: reduced topic {topic_num}"
-                                 f" only has {self.topic_sizes_reduced[topic_num]} documents.")
+                raise ValueError(
+                    f"Invalid number of documents: reduced topic {topic_num}"
+                    f" only has {self.topic_sizes_reduced[topic_num]} documents."
+                )
         else:
             if num_docs > self.topic_sizes[topic_num]:
-                raise ValueError(f"Invalid number of documents: original topic {topic_num}"
-                                 f" only has {self.topic_sizes[topic_num]} documents.")
+                raise ValueError(
+                    f"Invalid number of documents: original topic {topic_num}"
+                    f" only has {self.topic_sizes[topic_num]} documents."
+                )
 
     def _validate_doc_ids(self, doc_ids, doc_ids_neg):
-
         if not (isinstance(doc_ids, list) or isinstance(doc_ids, np.ndarray)):
             raise ValueError("doc_ids must be a list of string or int.")
         if not (isinstance(doc_ids_neg, list) or isinstance(doc_ids_neg, np.ndarray)):
@@ -1178,7 +1318,9 @@ class Top2Vec:
         vocab = self.vocab
         for word in keywords_lower + keywords_neg_lower:
             if word not in vocab:
-                raise ValueError(f"'{word}' has not been learned by the model so it cannot be searched.")
+                raise ValueError(
+                    f"'{word}' has not been learned by the model so it cannot be searched."
+                )
 
         return keywords_lower, keywords_neg_lower
 
@@ -1194,16 +1336,24 @@ class Top2Vec:
             raise ValueError("Some document ids already exist in model.")
 
         if self.doc_id_type == np.str_:
-            if not all((isinstance(doc_id, str) or isinstance(doc_id, np.str_)) for doc_id in document_ids):
+            if not all(
+                (isinstance(doc_id, str) or isinstance(doc_id, np.str_))
+                for doc_id in document_ids
+            ):
                 raise ValueError("Document ids need to be of type str.")
 
         if self.doc_id_type == np.int_:
-            if not all((isinstance(doc_id, int) or isinstance(doc_id, np.int_)) for doc_id in document_ids):
+            if not all(
+                (isinstance(doc_id, int) or isinstance(doc_id, np.int_))
+                for doc_id in document_ids
+            ):
                 raise ValueError("Document ids need to be of type int.")
 
     @staticmethod
     def _validate_documents(documents):
-        if not all((isinstance(doc, str) or isinstance(doc, np.str_)) for doc in documents):
+        if not all(
+            (isinstance(doc, str) or isinstance(doc, np.str_)) for doc in documents
+        ):
             raise ValueError("Documents need to be a list of strings.")
 
     @staticmethod
@@ -1246,27 +1396,27 @@ class Top2Vec:
         """
 
         # create 5D embeddings of documents
-        logger.info('Creating lower dimension embedding of documents')
+        logger.info("Creating lower dimension embedding of documents")
 
         if umap_args is None:
-            umap_args = {'n_neighbors': 15,
-                         'n_components': 5,
-                         'metric': 'cosine'}
+            umap_args = {"n_neighbors": 15, "n_components": 5, "metric": "cosine"}
 
         umap_model = umap.UMAP(**umap_args).fit(self.document_vectors)
 
         # find dense areas of document vectors
-        logger.info('Finding dense areas of documents')
+        logger.info("Finding dense areas of documents")
 
         if hdbscan_args is None:
-            hdbscan_args = {'min_cluster_size': 15,
-                            'metric': 'euclidean',
-                            'cluster_selection_method': 'eom'}
+            hdbscan_args = {
+                "min_cluster_size": 15,
+                "metric": "euclidean",
+                "cluster_selection_method": "eom",
+            }
 
         cluster = hdbscan.HDBSCAN(**hdbscan_args).fit(umap_model.embedding_)
 
         # calculate topic vectors from dense areas of documents
-        logger.info('Finding topics')
+        logger.info("Finding topics")
 
         # create topic vectors
         self._create_topic_vectors(cluster.labels_)
@@ -1275,11 +1425,14 @@ class Top2Vec:
         self._deduplicate_topics(topic_merge_delta)
 
         # find topic words and scores
-        self.topic_words, self.topic_word_scores = self._find_topic_words_and_scores(topic_vectors=self.topic_vectors)
+        self.topic_words, self.topic_word_scores = self._find_topic_words_and_scores(
+            topic_vectors=self.topic_vectors
+        )
 
         # assign documents to topic
-        self.doc_top, self.doc_dist = self._calculate_documents_topic(self.topic_vectors,
-                                                                      self.document_vectors)
+        self.doc_top, self.doc_dist = self._calculate_documents_topic(
+            self.topic_vectors, self.document_vectors
+        )
 
         # calculate topic sizes
         self.topic_sizes = self._calculate_topic_sizes(hierarchy=False)
@@ -1300,7 +1453,7 @@ class Top2Vec:
         """
         Creates an index of the document vectors using hnswlib. This will
         lead to faster search times for models with a large number of
-        documents. 
+        documents.
 
         For more information on hnswlib see: https://github.com/nmslib/hnswlib
 
@@ -1332,8 +1485,10 @@ class Top2Vec:
         self.index_id2doc_id = dict(zip(index_ids, self.document_ids))
         self.doc_id2index_id = dict(zip(self.document_ids, index_ids))
 
-        self.document_index = hnswlib.Index(space='ip', dim=vec_dim)
-        self.document_index.init_index(max_elements=num_vecs, ef_construction=ef_construction, M=M)
+        self.document_index = hnswlib.Index(space="ip", dim=vec_dim)
+        self.document_index.init_index(
+            max_elements=num_vecs, ef_construction=ef_construction, M=M
+        )
         self.document_index.add_items(document_vectors, index_ids)
         self.documents_indexed = True
 
@@ -1369,8 +1524,10 @@ class Top2Vec:
 
         index_ids = list(range(0, num_vecs))
 
-        self.word_index = hnswlib.Index(space='ip', dim=vec_dim)
-        self.word_index.init_index(max_elements=num_vecs, ef_construction=ef_construction, M=M)
+        self.word_index = hnswlib.Index(space="ip", dim=vec_dim)
+        self.word_index.init_index(
+            max_elements=num_vecs, ef_construction=ef_construction, M=M
+        )
         self.word_index.add_items(word_vectors, index_ids)
         self.words_indexed = True
 
@@ -1494,21 +1651,25 @@ class Top2Vec:
             else:
                 topic_vectors = self.topic_vectors
 
-            doc_topics, doc_dist = self._calculate_documents_topic(topic_vectors,
-                                                                   self.document_vectors[doc_indexes],
-                                                                   num_topics=num_topics)
+            doc_topics, doc_dist = self._calculate_documents_topic(
+                topic_vectors, self.document_vectors[doc_indexes], num_topics=num_topics
+            )
 
             topic_words = np.array([self.topic_words[topics] for topics in doc_topics])
-            topic_word_scores = np.array([self.topic_word_scores[topics] for topics in doc_topics])
+            topic_word_scores = np.array(
+                [self.topic_word_scores[topics] for topics in doc_topics]
+            )
 
         return doc_topics, doc_dist, topic_words, topic_word_scores
 
-    def add_documents(self,
-                      documents,
-                      doc_ids=None,
-                      tokenizer=None,
-                      use_embedding_model_tokenizer=False,
-                      embedding_batch_size=32):
+    def add_documents(
+        self,
+        documents,
+        doc_ids=None,
+        tokenizer=None,
+        use_embedding_model_tokenizer=False,
+        embedding_batch_size=32,
+    ):
         """
         Update the model with new documents.
 
@@ -1547,14 +1708,18 @@ class Top2Vec:
         # add documents
         self._validate_documents(documents)
         if self.documents is not None:
-            self.documents = np.array((list(self.documents) + list(documents)), dtype="object")
+            self.documents = np.array(
+                (list(self.documents) + list(documents)), dtype="object"
+            )
 
         # add document ids
         if self.document_ids_provided is True:
             self._validate_document_ids_add_doc(documents, doc_ids)
             doc_ids_len = len(self.document_ids)
             self.document_ids = np.array(list(self.document_ids) + list(doc_ids))
-            self.doc_id2index.update(dict(zip(doc_ids, list(range(doc_ids_len, doc_ids_len + len(doc_ids))))))
+            self.doc_id2index.update(
+                dict(zip(doc_ids, list(range(doc_ids_len, doc_ids_len + len(doc_ids)))))
+            )
 
         elif doc_ids is None:
             num_docs = len(documents)
@@ -1562,16 +1727,24 @@ class Top2Vec:
             doc_ids = list(range(start_id, start_id + num_docs))
             doc_ids_len = len(self.document_ids)
             self.document_ids = np.array(list(self.document_ids) + list(doc_ids))
-            self.doc_id2index.update(dict(zip(doc_ids, list(range(doc_ids_len, doc_ids_len + len(doc_ids))))))
+            self.doc_id2index.update(
+                dict(zip(doc_ids, list(range(doc_ids_len, doc_ids_len + len(doc_ids)))))
+            )
         else:
-            raise ValueError("doc_ids cannot be used because they were not provided to model during training.")
+            raise ValueError(
+                "doc_ids cannot be used because they were not provided to model during training."
+            )
 
         if self.embedding_model == "doc2vec":
             docs_processed = [tokenizer(doc) for doc in documents]
-            document_vectors = np.vstack([self.model.infer_vector(doc_words=doc,
-                                                                  alpha=0.025,
-                                                                  min_alpha=0.01,
-                                                                  epochs=100) for doc in docs_processed])
+            document_vectors = np.vstack(
+                [
+                    self.model.infer_vector(
+                        doc_words=doc, alpha=0.025, min_alpha=0.01, epochs=100
+                    )
+                    for doc in docs_processed
+                ]
+            )
 
             document_vectors = self._l2_normalize(document_vectors)
             self.document_vectors = np.vstack([self.document_vectors, document_vectors])
@@ -1581,8 +1754,10 @@ class Top2Vec:
                 docs_training = documents
             else:
                 docs_processed = [tokenizer(doc) for doc in documents]
-                docs_training = [' '.join(doc) for doc in docs_processed]
-            document_vectors = self._embed_documents(docs_training, embedding_batch_size)
+                docs_training = [" ".join(doc) for doc in docs_processed]
+            document_vectors = self._embed_documents(
+                docs_training, embedding_batch_size
+            )
             self.document_vectors = np.vstack([self.document_vectors, document_vectors])
 
         # update index
@@ -1715,7 +1890,9 @@ class Top2Vec:
         """
         if reduced:
             self._validate_hierarchical_reduction()
-            return np.array(self.topic_sizes_reduced.values), np.array(self.topic_sizes_reduced.index)
+            return np.array(self.topic_sizes_reduced.values), np.array(
+                self.topic_sizes_reduced.index
+            )
         else:
             return np.array(self.topic_sizes.values), np.array(self.topic_sizes.index)
 
@@ -1746,7 +1923,7 @@ class Top2Vec:
         topics_words: array of shape(num_topics, 50)
             For each topic the top 50 words are returned, in order
             of semantic similarity to topic.
-            
+
             Example:
             [['data', 'deep', 'learning' ... 'artificial'],         <Topic 0>
             ['environment', 'warming', 'climate ... 'temperature']  <Topic 1>
@@ -1755,7 +1932,7 @@ class Top2Vec:
         word_scores: array of shape(num_topics, 50)
             For each topic the cosine similarity scores of the
             top 50 words to the topic are returned.
-            
+
             Example:
             [[0.7132, 0.6473, 0.5700 ... 0.3455],  <Topic 0>
             [0.7818', 0.7671, 0.7603 ... 0.6769]   <Topic 1>
@@ -1772,16 +1949,22 @@ class Top2Vec:
             else:
                 self._validate_num_topics(num_topics, reduced)
 
-            return self.topic_words_reduced[0:num_topics], self.topic_word_scores_reduced[0:num_topics], np.array(
-                range(0, num_topics))
+            return (
+                self.topic_words_reduced[0:num_topics],
+                self.topic_word_scores_reduced[0:num_topics],
+                np.array(range(0, num_topics)),
+            )
         else:
-
             if num_topics is None:
                 num_topics = len(self.topic_vectors)
             else:
                 self._validate_num_topics(num_topics, reduced)
 
-            return self.topic_words[0:num_topics], self.topic_word_scores[0:num_topics], np.array(range(0, num_topics))
+            return (
+                self.topic_words[0:num_topics],
+                self.topic_word_scores[0:num_topics],
+                np.array(range(0, num_topics)),
+            )
 
     def get_topic_hierarchy(self):
         """
@@ -1846,7 +2029,6 @@ class Top2Vec:
         interval = max(int(self.document_vectors.shape[0] / 50000), 1)
 
         while num_topics_current > num_topics:
-
             # find smallest and most similar topics
             smallest = np.argmin(top_sizes)
             res = np.inner(top_vecs[smallest], top_vecs)
@@ -1862,8 +2044,13 @@ class Top2Vec:
             top_vec_most_sim = top_vecs[most_sim]
             most_sim_size = top_sizes[most_sim]
 
-            combined_vec = self._l2_normalize(((top_vec_smallest * smallest_size) +
-                                               (top_vec_most_sim * most_sim_size)) / (smallest_size + most_sim_size))
+            combined_vec = self._l2_normalize(
+                (
+                    (top_vec_smallest * smallest_size)
+                    + (top_vec_most_sim * most_sim_size)
+                )
+                / (smallest_size + most_sim_size)
+            )
 
             # update topic vectors
             ix_keep = list(range(len(top_vecs)))
@@ -1875,9 +2062,11 @@ class Top2Vec:
 
             # update topics sizes
             if count % interval == 0:
-                doc_top = self._calculate_documents_topic(topic_vectors=top_vecs,
-                                                          document_vectors=self.document_vectors,
-                                                          dist=False)
+                doc_top = self._calculate_documents_topic(
+                    topic_vectors=top_vecs,
+                    document_vectors=self.document_vectors,
+                    dist=False,
+                )
                 topic_sizes = pd.Series(doc_top).value_counts()
                 top_sizes = [topic_sizes[i] for i in range(0, len(topic_sizes))]
 
@@ -1903,21 +2092,29 @@ class Top2Vec:
             hierarchy.append(combined_inds)
 
         # re-calculate topic vectors from clusters
-        doc_top = self._calculate_documents_topic(topic_vectors=top_vecs,
-                                                  document_vectors=self.document_vectors,
-                                                  dist=False)
-        self.topic_vectors_reduced = self._l2_normalize(np.vstack([self.document_vectors
-                                                                   [np.where(doc_top == label)[0]]
-                                                                  .mean(axis=0) for label in set(doc_top)]))
+        doc_top = self._calculate_documents_topic(
+            topic_vectors=top_vecs, document_vectors=self.document_vectors, dist=False
+        )
+        self.topic_vectors_reduced = self._l2_normalize(
+            np.vstack(
+                [
+                    self.document_vectors[np.where(doc_top == label)[0]].mean(axis=0)
+                    for label in set(doc_top)
+                ]
+            )
+        )
 
         self.hierarchy = hierarchy
 
         # assign documents to topic
-        self.doc_top_reduced, self.doc_dist_reduced = self._calculate_documents_topic(self.topic_vectors_reduced,
-                                                                                      self.document_vectors)
+        self.doc_top_reduced, self.doc_dist_reduced = self._calculate_documents_topic(
+            self.topic_vectors_reduced, self.document_vectors
+        )
         # find topic words and scores
-        self.topic_words_reduced, self.topic_word_scores_reduced = self._find_topic_words_and_scores(
-            topic_vectors=self.topic_vectors_reduced)
+        (
+            self.topic_words_reduced,
+            self.topic_word_scores_reduced,
+        ) = self._find_topic_words_and_scores(topic_vectors=self.topic_vectors_reduced)
 
         # calculate topic sizes
         self.topic_sizes_reduced = self._calculate_topic_sizes(hierarchy=True)
@@ -1927,7 +2124,15 @@ class Top2Vec:
 
         return self.hierarchy
 
-    def query_documents(self, query, num_docs, return_documents=True, use_index=False, ef=None, tokenizer=None):
+    def query_documents(
+        self,
+        query,
+        num_docs,
+        return_documents=True,
+        use_index=False,
+        ef=None,
+        tokenizer=None,
+    ):
         """
         Semantic search of documents using a text query.
 
@@ -1988,20 +2193,23 @@ class Top2Vec:
             query_vec = self._embed_query(query)
 
         else:
-
             # if tokenizer is not passed use default
             if tokenizer is None:
                 tokenizer = default_tokenizer
 
             tokenized_query = tokenizer(query)
 
-            query_vec = self.model.infer_vector(doc_words=tokenized_query,
-                                                alpha=0.025,
-                                                min_alpha=0.01,
-                                                epochs=100)
+            query_vec = self.model.infer_vector(
+                doc_words=tokenized_query, alpha=0.025, min_alpha=0.01, epochs=100
+            )
 
-        return self.search_documents_by_vector(query_vec, num_docs, return_documents=return_documents,
-                                               use_index=use_index, ef=ef)
+        return self.search_documents_by_vector(
+            query_vec,
+            num_docs,
+            return_documents=return_documents,
+            use_index=use_index,
+            ef=ef,
+        )
 
     def query_topics(self, query, num_topics, reduced=False, tokenizer=None):
         """
@@ -2065,21 +2273,23 @@ class Top2Vec:
             query_vec = self._embed_query(query)
 
         else:
-
             # if tokenizer is not passed use default
             if tokenizer is None:
                 tokenizer = default_tokenizer
 
             tokenized_query = tokenizer(query)
 
-            query_vec = self.model.infer_vector(doc_words=tokenized_query,
-                                                alpha=0.025,
-                                                min_alpha=0.01,
-                                                epochs=100)
+            query_vec = self.model.infer_vector(
+                doc_words=tokenized_query, alpha=0.025, min_alpha=0.01, epochs=100
+            )
 
-        return self.search_topics_by_vector(query_vec, num_topics=num_topics, reduced=reduced)
+        return self.search_topics_by_vector(
+            query_vec, num_topics=num_topics, reduced=reduced
+        )
 
-    def search_documents_by_vector(self, vector, num_docs, return_documents=True, use_index=False, ef=None):
+    def search_documents_by_vector(
+        self, vector, num_docs, return_documents=True, use_index=False, ef=None
+    ):
         """
         Semantic search of documents using a vector.
 
@@ -2142,13 +2352,16 @@ class Top2Vec:
 
             index_ids, doc_scores = self.document_index.knn_query(vector, k=num_docs)
             index_ids = index_ids[0]
-            doc_ids = np.array([self.index_id2doc_id[index_id] for index_id in index_ids])
+            doc_ids = np.array(
+                [self.index_id2doc_id[index_id] for index_id in index_ids]
+            )
             doc_scores = doc_scores[0]
             doc_scores = np.array([1 - score for score in doc_scores])
             doc_indexes = self._get_document_indexes(doc_ids)
         else:
-            doc_indexes, doc_scores = self._search_vectors_by_vector(self.document_vectors,
-                                                                     vector, num_docs)
+            doc_indexes, doc_scores = self._search_vectors_by_vector(
+                self.document_vectors, vector, num_docs
+            )
             doc_ids = self._get_document_ids(doc_indexes)
 
         if self.documents is not None and return_documents:
@@ -2213,8 +2426,9 @@ class Top2Vec:
             word_scores = np.array([1 - score for score in word_scores])
 
         else:
-            word_indexes, word_scores = self._search_vectors_by_vector(self.word_vectors,
-                                                                       vector, num_words)
+            word_indexes, word_scores = self._search_vectors_by_vector(
+                self.word_vectors, vector, num_words
+            )
 
         words = np.array([self.vocab[index] for index in word_indexes])
 
@@ -2277,20 +2491,26 @@ class Top2Vec:
         if reduced:
             self._validate_hierarchical_reduction()
 
-            topic_nums, topic_scores = self._search_vectors_by_vector(self.topic_vectors_reduced,
-                                                                      vector, num_topics)
+            topic_nums, topic_scores = self._search_vectors_by_vector(
+                self.topic_vectors_reduced, vector, num_topics
+            )
             topic_words = [self.topic_words_reduced[topic] for topic in topic_nums]
-            word_scores = [self.topic_word_scores_reduced[topic] for topic in topic_nums]
+            word_scores = [
+                self.topic_word_scores_reduced[topic] for topic in topic_nums
+            ]
 
         else:
-            topic_nums, topic_scores = self._search_vectors_by_vector(self.topic_vectors,
-                                                                      vector, num_topics)
+            topic_nums, topic_scores = self._search_vectors_by_vector(
+                self.topic_vectors, vector, num_topics
+            )
             topic_words = [self.topic_words[topic] for topic in topic_nums]
             word_scores = [self.topic_word_scores[topic] for topic in topic_nums]
 
         return topic_words, word_scores, topic_scores, topic_nums
 
-    def search_documents_by_topic(self, topic_num, num_docs, return_documents=True, reduced=False):
+    def search_documents_by_topic(
+        self, topic_num, num_docs, return_documents=True, reduced=False
+    ):
         """
         Get the most semantically similar documents to the topic.
 
@@ -2337,19 +2557,26 @@ class Top2Vec:
             self._validate_topic_search(topic_num, num_docs, reduced)
 
             topic_document_indexes = np.where(self.doc_top_reduced == topic_num)[0]
-            topic_document_indexes_ordered = np.flip(np.argsort(self.doc_dist_reduced[topic_document_indexes]))
-            doc_indexes = topic_document_indexes[topic_document_indexes_ordered][0:num_docs]
+            topic_document_indexes_ordered = np.flip(
+                np.argsort(self.doc_dist_reduced[topic_document_indexes])
+            )
+            doc_indexes = topic_document_indexes[topic_document_indexes_ordered][
+                0:num_docs
+            ]
             doc_scores = self.doc_dist_reduced[doc_indexes]
             doc_ids = self._get_document_ids(doc_indexes)
 
         else:
-
             self._validate_topic_num(topic_num, reduced)
             self._validate_topic_search(topic_num, num_docs, reduced)
 
             topic_document_indexes = np.where(self.doc_top == topic_num)[0]
-            topic_document_indexes_ordered = np.flip(np.argsort(self.doc_dist[topic_document_indexes]))
-            doc_indexes = topic_document_indexes[topic_document_indexes_ordered][0:num_docs]
+            topic_document_indexes_ordered = np.flip(
+                np.argsort(self.doc_dist[topic_document_indexes])
+            )
+            doc_indexes = topic_document_indexes[topic_document_indexes_ordered][
+                0:num_docs
+            ]
             doc_scores = self.doc_dist[doc_indexes]
             doc_ids = self._get_document_ids(doc_indexes)
 
@@ -2359,8 +2586,15 @@ class Top2Vec:
         else:
             return doc_scores, doc_ids
 
-    def search_documents_by_keywords(self, keywords, num_docs, keywords_neg=None, return_documents=True,
-                                     use_index=False, ef=None):
+    def search_documents_by_keywords(
+        self,
+        keywords,
+        num_docs,
+        keywords_neg=None,
+        return_documents=True,
+        use_index=False,
+        ef=None,
+    ):
         """
         Semantic search of documents using keywords.
 
@@ -2428,19 +2662,25 @@ class Top2Vec:
         if use_index:
             self._check_document_index_status()
             combined_vector = self._get_combined_vec(word_vecs, neg_word_vecs)
-            return self.search_documents_by_vector(combined_vector, num_docs, return_documents=return_documents,
-                                                   use_index=True, ef=ef)
+            return self.search_documents_by_vector(
+                combined_vector,
+                num_docs,
+                return_documents=return_documents,
+                use_index=True,
+                ef=ef,
+            )
 
-        if self.embedding_model == 'doc2vec':
-            sim_docs = self.model.docvecs.most_similar(positive=word_vecs,
-                                                       negative=neg_word_vecs,
-                                                       topn=num_docs)
+        if self.embedding_model == "doc2vec":
+            sim_docs = self.model.docvecs.most_similar(
+                positive=word_vecs, negative=neg_word_vecs, topn=num_docs
+            )
             doc_indexes = [doc[0] for doc in sim_docs]
             doc_scores = np.array([doc[1] for doc in sim_docs])
         else:
             combined_vector = self._get_combined_vec(word_vecs, neg_word_vecs)
-            doc_indexes, doc_scores = self._search_vectors_by_vector(self.document_vectors,
-                                                                     combined_vector, num_docs)
+            doc_indexes, doc_scores = self._search_vectors_by_vector(
+                self.document_vectors, combined_vector, num_docs
+            )
 
         doc_ids = self._get_document_ids(doc_indexes)
 
@@ -2450,7 +2690,9 @@ class Top2Vec:
         else:
             return doc_scores, doc_ids
 
-    def similar_words(self, keywords, num_words, keywords_neg=None, use_index=False, ef=None):
+    def similar_words(
+        self, keywords, num_words, keywords_neg=None, use_index=False, ef=None
+    ):
         """
         Semantic similarity search of words.
 
@@ -2503,16 +2745,20 @@ class Top2Vec:
         neg_word_vecs = self._words2word_vectors(keywords_neg)
         combined_vector = self._get_combined_vec(word_vecs, neg_word_vecs)
 
-        num_res = min(num_words + len(keywords) + len(keywords_neg), self.word_vectors.shape[0])
+        num_res = min(
+            num_words + len(keywords) + len(keywords_neg), self.word_vectors.shape[0]
+        )
 
         # if use_index:
-        words, word_scores = self.search_words_by_vector(vector=combined_vector,
-                                                         num_words=num_res,
-                                                         use_index=use_index,
-                                                         ef=ef)
+        words, word_scores = self.search_words_by_vector(
+            vector=combined_vector, num_words=num_res, use_index=use_index, ef=ef
+        )
 
-        res_indexes = [index for index, word in enumerate(words)
-                       if word not in list(keywords) + list(keywords_neg)][:num_words]
+        res_indexes = [
+            index
+            for index, word in enumerate(words)
+            if word not in list(keywords) + list(keywords_neg)
+        ][:num_words]
         words = words[res_indexes]
         word_scores = word_scores[res_indexes]
 
@@ -2552,7 +2798,7 @@ class Top2Vec:
         topics_words: array of shape (num_topics, 50)
             For each topic the top 50 words are returned, in order of semantic
             similarity to topic.
-            
+
             Example:
             [['data', 'deep', 'learning' ... 'artificial'],           <Topic 0>
             ['environment', 'warming', 'climate ... 'temperature']    <Topic 1>
@@ -2561,7 +2807,7 @@ class Top2Vec:
         word_scores: array of shape (num_topics, 50)
             For each topic the cosine similarity scores of the top 50 words
             to the topic are returned.
-            
+
             Example:
             [[0.7132, 0.6473, 0.5700 ... 0.3455],     <Topic 0>
             [0.7818', 0.7671, 0.7603 ... 0.6769]     <Topic 1>
@@ -2582,10 +2828,19 @@ class Top2Vec:
         neg_word_vecs = self._words2word_vectors(keywords_neg)
         combined_vector = self._get_combined_vec(word_vecs, neg_word_vecs)
 
-        return self.search_topics_by_vector(combined_vector, num_topics=num_topics, reduced=reduced)
+        return self.search_topics_by_vector(
+            combined_vector, num_topics=num_topics, reduced=reduced
+        )
 
-    def search_documents_by_documents(self, doc_ids, num_docs, doc_ids_neg=None, return_documents=True,
-                                      use_index=False, ef=None):
+    def search_documents_by_documents(
+        self,
+        doc_ids,
+        num_docs,
+        doc_ids_neg=None,
+        return_documents=True,
+        use_index=False,
+        ef=None,
+    ):
         """
         Semantic similarity search of documents.
 
@@ -2655,13 +2910,18 @@ class Top2Vec:
             doc_vecs = [document_vectors[ind] for ind in doc_indexes]
             doc_vecs_neg = [document_vectors[ind] for ind in doc_indexes_neg]
             combined_vector = self._get_combined_vec(doc_vecs, doc_vecs_neg)
-            return self.search_documents_by_vector(combined_vector, num_docs, return_documents=return_documents,
-                                                   use_index=True, ef=ef)
+            return self.search_documents_by_vector(
+                combined_vector,
+                num_docs,
+                return_documents=return_documents,
+                use_index=True,
+                ef=ef,
+            )
 
-        if self.embedding_model == 'doc2vec':
-            sim_docs = self.model.docvecs.most_similar(positive=doc_indexes,
-                                                       negative=doc_indexes_neg,
-                                                       topn=num_docs)
+        if self.embedding_model == "doc2vec":
+            sim_docs = self.model.docvecs.most_similar(
+                positive=doc_indexes, negative=doc_indexes_neg, topn=num_docs
+            )
             doc_indexes = [doc[0] for doc in sim_docs]
             doc_scores = np.array([doc[1] for doc in sim_docs])
         else:
@@ -2669,15 +2929,21 @@ class Top2Vec:
             doc_vecs_neg = [self.document_vectors[ind] for ind in doc_indexes_neg]
             combined_vector = self._get_combined_vec(doc_vecs, doc_vecs_neg)
 
-            num_res = min(num_docs + len(doc_indexes) + len(doc_indexes_neg),
-                          self.document_vectors.shape[0])
+            num_res = min(
+                num_docs + len(doc_indexes) + len(doc_indexes_neg),
+                self.document_vectors.shape[0],
+            )
 
             # don't return documents that were searched
             search_doc_indexes = list(doc_indexes) + list(doc_indexes_neg)
-            doc_indexes, doc_scores = self._search_vectors_by_vector(self.document_vectors,
-                                                                     combined_vector, num_res)
-            res_indexes = [index for index, doc_ind in enumerate(doc_indexes)
-                           if doc_ind not in search_doc_indexes][:num_docs]
+            doc_indexes, doc_scores = self._search_vectors_by_vector(
+                self.document_vectors, combined_vector, num_res
+            )
+            res_indexes = [
+                index
+                for index, doc_ind in enumerate(doc_indexes)
+                if doc_ind not in search_doc_indexes
+            ][:num_docs]
             doc_indexes = doc_indexes[res_indexes]
             doc_scores = doc_scores[res_indexes]
 
@@ -2689,7 +2955,9 @@ class Top2Vec:
         else:
             return doc_scores, doc_ids
 
-    def generate_topic_wordcloud(self, topic_num, background_color="black", reduced=False):
+    def generate_topic_wordcloud(
+        self, topic_num, background_color="black", reduced=False
+    ):
         """
         Create a word cloud for a topic.
 
@@ -2718,22 +2986,32 @@ class Top2Vec:
         displayed.
 
         """
+        from wordcloud import WordCloud
+        import matplotlib.pyplot as plt
 
         if reduced:
             self._validate_hierarchical_reduction()
             self._validate_topic_num(topic_num, reduced)
-            word_score_dict = dict(zip(self.topic_words_reduced[topic_num],
-                                       softmax(self.topic_word_scores_reduced[topic_num])))
+            word_score_dict = dict(
+                zip(
+                    self.topic_words_reduced[topic_num],
+                    softmax(self.topic_word_scores_reduced[topic_num]),
+                )
+            )
         else:
             self._validate_topic_num(topic_num, reduced)
-            word_score_dict = dict(zip(self.topic_words[topic_num],
-                                       softmax(self.topic_word_scores[topic_num])))
+            word_score_dict = dict(
+                zip(
+                    self.topic_words[topic_num],
+                    softmax(self.topic_word_scores[topic_num]),
+                )
+            )
 
-        plt.figure(figsize=(16, 4),
-                   dpi=200)
+        plt.figure(figsize=(16, 4), dpi=200)
         plt.axis("off")
         plt.imshow(
-            WordCloud(width=1600,
-                      height=400,
-                      background_color=background_color).generate_from_frequencies(word_score_dict))
-        plt.title("Topic " + str(topic_num), loc='left', fontsize=25, pad=20)
+            WordCloud(
+                width=1600, height=400, background_color=background_color
+            ).generate_from_frequencies(word_score_dict)
+        )
+        plt.title("Topic " + str(topic_num), loc="left", fontsize=25, pad=20)
